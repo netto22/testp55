@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorios de Sistemas</title>
+<meta name="description" content="Documento interactivo que explica, de forma detallada y estricta, los tres laboratorios de gestion de memoria y concurrencia del proyecto.">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --text: #1c2128;
+    --muted: #5a6570;
+    --border: #d8dee4;
+    --accent: #2f6feb;
+    --accent-weak: #e3ecfd;
+    --ok: #1a7f4b;
+    --ok-weak: #d8f0e2;
+    --warn: #b25c00;
+    --warn-weak: #fbe7cf;
+    --bad: #c23a3a;
+    --bad-weak: #f7dcdc;
+    --code-bg: #f2f4f7;
+    --code-text: #1c2128;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0d1117; --panel: #161b22; --panel-2: #1c2330; --text: #e6edf3;
+      --muted: #9aa7b4; --border: #2d333b; --accent: #4f8cff; --accent-weak: #16243d;
+      --ok: #3fb950; --ok-weak: #122b1c; --warn: #d29922; --warn-weak: #2e2410;
+      --bad: #f85149; --bad-weak: #2d1414; --code-bg: #0b0f14; --code-text: #e6edf3;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --panel: #161b22; --panel-2: #1c2330; --text: #e6edf3;
+    --muted: #9aa7b4; --border: #2d333b; --accent: #4f8cff; --accent-weak: #16243d;
+    --ok: #3fb950; --ok-weak: #122b1c; --warn: #d29922; --warn-weak: #2e2410;
+    --bad: #f85149; --bad-weak: #2d1414; --code-bg: #0b0f14; --code-text: #e6edf3;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); line-height: 1.6; font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 80px; }
+
+  header.top {
+    position: sticky; top: 0; z-index: 20; background: var(--panel);
+    border-bottom: 1px solid var(--border); backdrop-filter: blur(6px);
+  }
+  .top-inner { max-width: 980px; margin: 0 auto; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand { font-weight: 700; font-size: 1.05rem; letter-spacing: -.01em; }
+  .brand small { color: var(--muted); font-weight: 400; font-size: .8rem; }
+  .spacer { flex: 1 1 auto; }
+  .theme-btn {
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: .85rem;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+
+  nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  nav.tabs button {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    padding: 8px 12px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: .9rem;
+    font-family: inherit; border-bottom: 2px solid transparent;
+  }
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--accent); border-bottom-color: var(--accent); font-weight: 600;
+  }
+
+  h1 { font-size: 1.8rem; letter-spacing: -.02em; margin: 28px 0 6px; }
+  h2 { font-size: 1.3rem; letter-spacing: -.01em; margin: 32px 0 10px;
+       border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 1.05rem; margin: 22px 0 6px; }
+  p { margin: 10px 0; }
+  .lead { color: var(--muted); font-size: 1.05rem; }
+
+  section.tab { display: none; }
+  section.tab.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; margin: 16px 0; box-shadow: var(--shadow);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+  code { font-family: var(--mono); background: var(--code-bg); padding: 1px 5px;
+    border-radius: 5px; font-size: .88em; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; overflow-x: auto; font-family: var(--mono);
+    font-size: .82rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .tok-c { color: var(--muted); font-style: italic; }   /* comentario */
+  .tok-k { color: var(--accent); font-weight: 600; }      /* keyword */
+  .tok-f { color: var(--ok); }                             /* funcion */
+
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .9rem; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  th { background: var(--panel-2); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  .pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; border: 1px solid transparent; vertical-align: middle; }
+  .pill.ok { background: var(--ok-weak); color: var(--ok); }
+  .pill.warn { background: var(--warn-weak); color: var(--warn); }
+  .pill.bad { background: var(--bad-weak); color: var(--bad); }
+  .pill.info { background: var(--accent-weak); color: var(--accent); }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-weak);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-weak); }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-weak); }
+
+  details { border: 1px solid var(--border); border-radius: 10px; padding: 0 14px;
+    margin: 12px 0; background: var(--panel); }
+  details[open] { padding-bottom: 12px; }
+  summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+  summary::marker { color: var(--accent); }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+  .btn { border: 1px solid var(--border); background: var(--accent); color: #fff;
+    border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: .88rem;
+    font-family: inherit; font-weight: 600; }
+  .btn.sec { background: var(--panel-2); color: var(--text); }
+  .btn:hover { filter: brightness(1.05); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); margin: 8px 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); display: inline-block; }
+
+  .status { font-family: var(--mono); font-size: .85rem; color: var(--muted); margin: 8px 0; min-height: 1.4em; }
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+  .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: .85rem; }
+  .stat b { font-family: var(--mono); font-size: 1.05rem; display: block; }
+
+  /* GC graph */
+  svg { max-width: 100%; height: auto; display: block; }
+  .node circle { transition: fill .35s ease, stroke .35s ease, opacity .5s ease; }
+  .node text { font-family: var(--mono); font-size: 13px; fill: var(--text); pointer-events: none; }
+  .edge { stroke: var(--muted); stroke-width: 1.6; opacity: .6; transition: opacity .5s ease; }
+
+  /* ring buffer */
+  .ring { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin: 12px 0; }
+  @media (max-width: 520px){ .ring { grid-template-columns: repeat(4,1fr);} }
+  .cell { aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-family: var(--mono);
+    font-size: .8rem; background: var(--panel-2); color: var(--muted); position: relative;
+    transition: background .2s ease, color .2s ease, transform .15s ease; }
+  .cell.full { background: var(--accent-weak); color: var(--accent); font-weight: 700; border-color: var(--accent); }
+  .cell .ptr { position: absolute; top: -9px; font-size: .62rem; font-weight: 700; }
+  .cell .ptr.h { left: 3px; color: var(--ok); }
+  .cell .ptr.t { right: 3px; color: var(--warn); }
+
+  /* race demo */
+  .race { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin: 14px 0; }
+  @media (max-width: 560px){ .race { grid-template-columns: 1fr; } }
+  .thread { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--panel-2);
+    text-align: center; transition: border-color .3s, background .3s; font-size: .85rem; }
+  .thread.win { border-color: var(--ok); background: var(--ok-weak); }
+  .thread.lose { border-color: var(--bad); background: var(--bad-weak); opacity: .85; }
+  .objbox { text-align: center; }
+  .objcircle { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto;
+    font-family: var(--mono); font-weight: 700; background: var(--panel);
+    transition: background .3s, border-color .3s; }
+  .objcircle.marked { background: var(--ok-weak); border-color: var(--ok); color: var(--ok); }
+
+  footer { color: var(--muted); font-size: .82rem; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 16px; }
+  a { color: var(--accent); }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Laboratorios de Sistemas <small>· gestión de memoria y concurrencia</small></div>
+    <div class="spacer"></div>
+    <button class="theme-btn" id="themeBtn" aria-label="Cambiar tema">◐ Tema</button>
+  </div>
+  <div class="top-inner" style="padding-top:0;">
+    <nav class="tabs" id="tabs" role="tablist">
+      <button role="tab" data-tab="intro" aria-selected="true">Resumen</button>
+      <button role="tab" data-tab="l1">Lab 01 · GC</button>
+      <button role="tab" data-tab="l2">Lab 02 · Concurrencia</button>
+      <button role="tab" data-tab="l3">Lab 03 · GC paralelo</button>
+      <button role="tab" data-tab="run">Ejecutar</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============================ RESUMEN ============================ -->
+<section class="tab active" id="tab-intro" role="tabpanel">
+  <h1>Tres laboratorios, una progresión</h1>
+  <p class="lead">Experimentos reproducibles en C que construyen, paso a paso, el núcleo de
+  gestión de memoria y concurrencia de un motor de ejecución (al estilo de JavaScriptCore),
+  con código propio y verificación estricta en cada etapa.</p>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>Lab</th><th>Tema</th><th>Qué construye</th><th>Verificación</th></tr></thead>
+      <tbody>
+        <tr><td><b>01</b></td><td>Gestión de memoria</td><td>Recolector mark-and-sweep secuencial</td>
+            <td><span class="pill ok">asserts</span> <span class="pill ok">ASan</span></td></tr>
+        <tr><td><b>02</b></td><td>Concurrencia</td><td>Productor/consumidor con buffer acotado</td>
+            <td><span class="pill ok">invariante</span> <span class="pill ok">TSan</span></td></tr>
+        <tr><td><b>03</b></td><td>Cruce 01×02</td><td>Marcado <i>paralelo</i> del GC</td>
+            <td><span class="pill ok">vs. referencia</span> <span class="pill ok">TSan</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Hilo conductor</h2>
+  <p>Cada lab prepara el siguiente y expone un problema que el posterior resuelve:</p>
+  <ol>
+    <li><b>Lab 01</b> construye un GC que razona sobre <i>alcanzabilidad</i> (y por eso recolecta
+    ciclos, cosa que el conteo de referencias no puede). Pero marca en un solo hilo.</li>
+    <li><b>Lab 02</b> aísla el patrón de sincronización (mutex + variables de condición) sobre
+    una cola de trabajo, y <b>mide la contención</b> cuando varios hilos comparten estado.</li>
+    <li><b>Lab 03</b> une ambos: reparte el marcado del GC entre N hilos. Resuelve la corrección
+    (marcar cada objeto exactamente una vez + detectar terminación) y, honestamente,
+    <b>mide por qué un diseño ingenuo no escala</b>.</li>
+  </ol>
+
+  <div class="callout">
+    <b>Metodología.</b> Cada lab sigue la misma estructura: objetivo técnico · información disponible ·
+    herramientas · procedimiento · resultados verificables · conclusiones y limitaciones. Toda afirmación
+    de corrección está respaldada por un <code>assert</code>, una comparación con una referencia, o un
+    sanitizer (AddressSanitizer / ThreadSanitizer).
+  </div>
+
+  <h2>Alcance</h2>
+  <p>Estudio de ingeniería sobre componentes de código abierto (WebKit / JavaScriptCore) y
+  desarrollo de herramientas educativas con código propio. Los labs no dependen de ningún binario
+  cerrado ni de ningún dispositivo: se compilan y verifican en cualquier Linux con <code>gcc</code>/<code>clang</code>.</p>
+</section>
+
+<!-- ============================ LAB 01 ============================ -->
+<section class="tab" id="tab-l1" role="tabpanel">
+  <h1>Lab 01 — Recolector mark-and-sweep</h1>
+  <p class="lead">Reproduce el mecanismo central de gestión de memoria automática: heap de objetos,
+  conjunto de raíces, marcado por alcanzabilidad y barrido de lo inalcanzable.</p>
+
+  <h2>Simulador interactivo</h2>
+  <p>El grafo tiene dos raíces (<b>R1</b>, <b>R2</b>). Pulsa <b>Marcar</b> para recorrer el grafo desde
+  las raíces; luego <b>Barrer</b> para liberar lo que quedó sin marcar. Observa dos cosas:
+  el ciclo <b>A↔B</b> es alcanzable y <b>sobrevive</b>; el ciclo huérfano <b>X↔Y</b> <b>se recolecta</b>
+  (algo imposible con conteo de referencias), igual que el objeto suelto <b>G</b>.</p>
+
+  <div class="card">
+    <div class="controls">
+      <button class="btn" id="gcMark">1 · Marcar</button>
+      <button class="btn" id="gcSweep" disabled>2 · Barrer</button>
+      <button class="btn sec" id="gcReset">Reiniciar</button>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--panel)"></span> vivo (sin marcar)</span>
+      <span><span class="swatch" style="background:var(--ok-weak);border-color:var(--ok)"></span> marcado (alcanzable)</span>
+      <span><span class="swatch" style="background:var(--accent-weak);border-color:var(--accent)"></span> raíz</span>
+      <span><span class="swatch" style="background:var(--bad-weak);border-color:var(--bad)"></span> será barrido</span>
+    </div>
+    <svg id="gcSvg" viewBox="0 0 600 340" role="img" aria-label="Grafo de objetos del recolector"></svg>
+    <div class="status" id="gcStatus">Pulsa «Marcar» para iniciar la fase 1.</div>
+    <div class="stat-row">
+      <div class="stat">marcados <b id="gcMarked">0</b></div>
+      <div class="stat">barridos <b id="gcFreed">0</b></div>
+      <div class="stat">vivos <b id="gcAlive">8</b></div>
+    </div>
+  </div>
+
+  <h2>Cómo funciona</h2>
+  <div class="grid2">
+    <div>
+      <h3>Fase de marcado</h3>
+      <p>Recorrido recursivo del grafo desde las raíces. El bit <code>marked</code> corta los ciclos:
+      si un objeto ya está marcado, no se vuelve a visitar.</p>
+      <pre><code><span class="tok-k">static void</span> <span class="tok-f">mark</span>(Object *obj) {
+  <span class="tok-k">if</span> (obj == NULL) <span class="tok-k">return</span>;
+  <span class="tok-k">if</span> (obj->marked) <span class="tok-k">return</span>;  <span class="tok-c">// corta ciclos</span>
+  obj->marked = 1;
+  <span class="tok-k">if</span> (obj->type == OBJ_PAIR) {
+    <span class="tok-f">mark</span>(obj->head);
+    <span class="tok-f">mark</span>(obj->tail);
+  }
+}</code></pre>
+    </div>
+    <div>
+      <h3>Fase de barrido</h3>
+      <p>Recorre la lista global de objetos; libera los no marcados y limpia la marca de los vivos
+      para el siguiente ciclo.</p>
+      <pre><code><span class="tok-k">static void</span> <span class="tok-f">sweep</span>(VM *vm) {
+  Object **o = &vm->first;
+  <span class="tok-k">while</span> (*o) {
+    <span class="tok-k">if</span> (!(*o)->marked) {
+      Object *dead = *o;
+      *o = dead->next;
+      <span class="tok-f">free</span>(dead);
+    } <span class="tok-k">else</span> {
+      (*o)->marked = 0;   <span class="tok-c">// reset</span>
+      o = &(*o)->next;
+    }
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <h2>Resultados verificables</h2>
+  <p>El programa termina con <code>assert</code> en tres escenarios; falla ruidosamente si una invariante se rompe.</p>
+  <table>
+    <thead><tr><th>Escenario</th><th>Comprueba</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>1 · Inalcanzables</td><td>objetos sin referencia se liberan</td><td><span class="pill ok">freed = 2</span></td></tr>
+      <tr><td>2 · Raíces</td><td>lo alcanzable sobrevive a 101 asignaciones</td><td><span class="pill ok">vivos = 1</span></td></tr>
+      <tr><td>3 · Ciclo huérfano</td><td>un ciclo sin raíz se recolecta entero</td><td><span class="pill ok">vivos = 0</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout ok"><b>AddressSanitizer + UBSan:</b> ejecución sin errores de memoria ni fugas.</div>
+
+  <details><summary>Limitaciones frente a un GC de producción (JSC Riptide)</summary>
+    <ul>
+      <li>Es <i>stop-the-world</i>; Riptide marca <b>concurrentemente</b> con la ejecución.</li>
+      <li>No es <b>generacional</b> (JSC separa objetos jóvenes/viejos).</li>
+      <li>Marcado <b>recursivo</b> → riesgo de desbordar la pila; los reales usan una mark stack explícita.</li>
+      <li>Sin compactación ni manejo de fragmentación.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ============================ LAB 02 ============================ -->
+<section class="tab" id="tab-l2" role="tabpanel">
+  <h1>Lab 02 — Productor/consumidor con buffer acotado</h1>
+  <p class="lead">El patrón de sincronización más común en runtimes concurrentes: una cola de trabajo
+  de capacidad fija que coordina varios hilos con un mutex y dos variables de condición.</p>
+
+  <h2>Buffer acotado en acción</h2>
+  <p>Capacidad fija de 16 celdas (como en el lab). El <b>productor</b> (puntero <span style="color:var(--warn)">tail</span>)
+  escribe; el <b>consumidor</b> (puntero <span style="color:var(--ok)">head</span>) lee. Cuando el buffer se llena,
+  el productor espera; cuando se vacía, el consumidor espera. Ajusta las velocidades y observa cómo se llena o se drena.</p>
+
+  <div class="card">
+    <div class="controls">
+      <button class="btn" id="bbPlay">▶ Reproducir</button>
+      <button class="btn sec" id="bbReset">Reiniciar</button>
+      <label style="font-size:.82rem;color:var(--muted)">prod. <input type="range" id="bbProd" min="1" max="10" value="6"></label>
+      <label style="font-size:.82rem;color:var(--muted)">cons. <input type="range" id="bbCons" min="1" max="10" value="4"></label>
+    </div>
+    <div class="ring" id="bbRing"></div>
+    <div class="status" id="bbStatus">Buffer vacío. Pulsa «Reproducir».</div>
+    <div class="stat-row">
+      <div class="stat">producidos <b id="bbP">0</b></div>
+      <div class="stat">consumidos <b id="bbC">0</b></div>
+      <div class="stat">en buffer <b id="bbN">0</b> / 16</div>
+    </div>
+  </div>
+
+  <h2>Las reglas de oro</h2>
+  <div class="grid2">
+    <div>
+      <h3><code>while</code>, nunca <code>if</code></h3>
+      <p>Al despertar hay que <b>re-verificar</b> la condición: puede haber despertares espurios, y con
+      varios hilos otro pudo consumir el hueco antes.</p>
+      <pre><code><span class="tok-k">while</span> (q->count == BUFFER_CAP)
+  <span class="tok-f">pthread_cond_wait</span>(&q->not_full, &q->lock);
+<span class="tok-c">// ...producir...</span>
+<span class="tok-f">pthread_cond_signal</span>(&q->not_empty);</code></pre>
+    </div>
+    <div>
+      <h3>Terminación limpia</h3>
+      <p>El último productor en acabar despierta a <b>todos</b> los consumidores con
+      <code>broadcast</code>, para que ninguno quede bloqueado esperando datos que no llegarán.</p>
+      <pre><code>q->producers_remaining--;
+<span class="tok-k">if</span> (q->producers_remaining == 0)
+  <span class="tok-f">pthread_cond_broadcast</span>(&q->not_empty);</code></pre>
+    </div>
+  </div>
+
+  <h2>Resultados verificables</h2>
+  <p>Invariante de conservación: la suma y el conteo de lo consumido deben coincidir exactamente con lo
+  producido, comprobado por tres vías independientes. Probado en cargas simétricas y asimétricas:</p>
+  <table>
+    <thead><tr><th>Escenario</th><th class="num">items</th><th>consumido = esperado</th><th>buffer final</th></tr></thead>
+    <tbody>
+      <tr><td>4 prod × 4 cons</td><td class="num">400 000</td><td><span class="pill ok">✓</span></td><td class="num">0</td></tr>
+      <tr><td>1 prod × 8 cons</td><td class="num">200 000</td><td><span class="pill ok">✓</span></td><td class="num">0</td></tr>
+      <tr><td>8 prod × 1 cons</td><td class="num">400 000</td><td><span class="pill ok">✓</span></td><td class="num">0</td></tr>
+      <tr><td>8 prod × 8 cons</td><td class="num">400 000</td><td><span class="pill ok">✓</span></td><td class="num">0</td></tr>
+    </tbody>
+  </table>
+  <div class="callout ok"><b>ThreadSanitizer:</b> 0 condiciones de carrera.</div>
+</section>
+
+<!-- ============================ LAB 03 ============================ -->
+<section class="tab" id="tab-l3" role="tabpanel">
+  <h1>Lab 03 — Marcado paralelo del GC</h1>
+  <p class="lead">Cruce de los labs 01 y 02: la fase de marcado se reparte entre N hilos que drenan
+  una mark stack compartida. Es el núcleo de un GC concurrente real.</p>
+
+  <h2>Problema 1 — Marcar exactamente una vez</h2>
+  <p>Si dos hilos descubren el mismo objeto a la vez, ambos podrían intentar empujarlo a la pila
+  (y escanearlo dos veces). La solución es un <b>bit de marca atómico</b>: gana quien pase la marca
+  de 0 a 1 con <code>atomic_exchange</code>, y solo ese hilo lo empuja.</p>
+
+  <div class="card">
+    <p style="margin-top:0">Objeto <code>O</code> sin marcar. Dos hilos ejecutan <code>atomic_exchange(&amp;O-&gt;marked, 1)</code>
+    a la vez. Pulsa para simular la carrera:</p>
+    <div class="race">
+      <div class="thread" id="th1">Hilo&nbsp;1<br><span id="th1r" style="font-family:var(--mono)">—</span></div>
+      <div class="objbox">
+        <div class="objcircle" id="raceObj">O</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">marked = <span id="raceBit">0</span></div>
+      </div>
+      <div class="thread" id="th2">Hilo&nbsp;2<br><span id="th2r" style="font-family:var(--mono)">—</span></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="raceGo">Simular carrera</button>
+      <button class="btn sec" id="raceReset">Reiniciar</button>
+    </div>
+    <div class="status" id="raceStatus">La operación atómica garantiza que solo un hilo "gana" y empuja el objeto.</div>
+  </div>
+
+  <pre><code><span class="tok-k">unsigned char</span> prev = <span class="tok-f">atomic_exchange</span>(&c->marked, 1);
+<span class="tok-k">if</span> (prev == 0) winners[nw++] = c;   <span class="tok-c">// gane yo: empujo el hijo</span></code></pre>
+
+  <h2>Problema 2 — Detección de terminación</h2>
+  <p>Un hilo que ve la pila vacía <b>no puede salir</b>: otro hilo activo podría estar a punto de empujar
+  hijos. Se cuenta cuántos hilos están ociosos. La clave sutil:</p>
+  <div class="callout warn">
+    Un hilo que sacó un objeto de la pila lo tiene <b>«en la mano»</b> y <b>no</b> se cuenta como ocioso.
+    Así su trabajo pendiente impide declarar el fin. Solo cuando <code>idle == nworkers</code> con la pila
+    vacía no hay trabajo en vuelo → <code>done</code> + <code>broadcast</code>.
+  </div>
+  <pre><code>ms->idle++;
+<span class="tok-k">if</span> (ms->idle == ms->nworkers) {   <span class="tok-c">// todos ociosos + pila vacia = fin</span>
+  ms->done = <span class="tok-k">true</span>;
+  <span class="tok-f">pthread_cond_broadcast</span>(&ms->cond);
+  <span class="tok-k">return</span> NULL;
+}
+<span class="tok-k">while</span> (ms->size == 0 && !ms->done)
+  <span class="tok-f">pthread_cond_wait</span>(&ms->cond, &ms->lock);</code></pre>
+
+  <h2>Resultados: correcto, pero NO escala</h2>
+  <p>La corrección es sólida: el conjunto marcado en paralelo es <b>idéntico</b> al de un marcado secuencial
+  de referencia (DFS) para 1, 2, 4 y 8 hilos; <code>escaneados == alcanzables</code>; el barrido libera exactamente
+  los inalcanzables; y <b>TSan no reporta carreras</b>.</p>
+  <p>Pero el tiempo medido (200 000 objetos, 150 436 alcanzables) revela lo contrario de lo esperado:</p>
+  <table>
+    <thead><tr><th class="num">hilos</th><th class="num">escaneados</th><th>correcto</th><th class="num">tiempo</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">150 436</td><td><span class="pill ok">✓</span></td><td class="num">13.4 ms</td></tr>
+      <tr><td class="num">2</td><td class="num">150 436</td><td><span class="pill ok">✓</span></td><td class="num">58.5 ms</td></tr>
+      <tr><td class="num">4</td><td class="num">150 436</td><td><span class="pill ok">✓</span></td><td class="num">66.2 ms</td></tr>
+      <tr><td class="num">8</td><td class="num">150 436</td><td><span class="pill ok">✓</span></td><td class="num">64.4 ms</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    <b>Hallazgo honesto.</b> Más hilos = más lento. No es un fallo de corrección: es el resultado central del lab.
+    Causa: un <b>mutex único global</b> serializa todos los <code>push</code>/<code>pop</code>, y el trabajo por objeto
+    (escanear ≤ 6 punteros) es minúsculo frente al coste de sincronizar. La contención domina. El
+    <code>broadcast</code> en cada <code>push</code> además genera despertares innecesarios (<i>thundering herd</i>).
+  </div>
+  <p>Por eso los GC de producción <b>no</b> usan una pila global con lock, sino <b>una mark stack por hilo</b> con
+  <b>work-stealing</b> (robo de trabajo), que minimiza la sincronización al caso de robo. Ese es el Lab 04 natural.</p>
+</section>
+
+<!-- ============================ EJECUTAR ============================ -->
+<section class="tab" id="tab-run" role="tabpanel">
+  <h1>Cómo ejecutar</h1>
+  <p class="lead">Cada lab es autónomo: <code>cd</code> a su carpeta y usa <code>make</code>. Requiere
+  <code>gcc</code> o <code>clang</code> y <code>make</code> (y <code>-lpthread</code>, ya incluido en los labs 02/03).</p>
+
+  <h2>Lab 01 — GC</h2>
+  <pre><code><span class="tok-k">cd</span> lab01-gc
+make run        <span class="tok-c"># compila y ejecuta los 3 escenarios con asserts</span>
+make asan       <span class="tok-c"># recompila con AddressSanitizer + UBSan</span></code></pre>
+
+  <h2>Lab 02 — Concurrencia</h2>
+  <pre><code><span class="tok-k">cd</span> lab02-concurrency
+make run              <span class="tok-c"># 4 prod / 4 cons / 100k items</span>
+make stress          <span class="tok-c"># cargas asimetricas 1x8, 8x1, 8x8</span>
+make tsan            <span class="tok-c"># ThreadSanitizer: verifica ausencia de races</span>
+./conc 2 3 10000     <span class="tok-c"># parametros propios: n_prod n_cons items/prod</span></code></pre>
+
+  <h2>Lab 03 — GC paralelo</h2>
+  <pre><code><span class="tok-k">cd</span> lab03-parallel-gc
+make run                 <span class="tok-c"># marca con 1,2,4,8 hilos y verifica vs. referencia</span>
+make tsan                <span class="tok-c"># ThreadSanitizer (grafo menor)</span>
+./pgc 500000 400000      <span class="tok-c"># n objetos, region alcanzable-elegible</span></code></pre>
+
+  <div class="callout">
+    <b>Verificación en dos niveles.</b> <span class="pill info">funcional</span> — <code>assert</code> / comparación
+    con una referencia / invariante de conservación. <span class="pill info">memoria y concurrencia</span> —
+    AddressSanitizer (fugas, accesos inválidos) y ThreadSanitizer (condiciones de carrera). Un lab solo se
+    considera correcto cuando pasa ambos.
+  </div>
+
+  <h2>Estructura del repositorio</h2>
+  <pre><code>.
+├── labs.html                <span class="tok-c"># este documento</span>
+├── lab01-gc/                gc.c  Makefile  README.md
+├── lab02-concurrency/       conc.c  Makefile  README.md
+└── lab03-parallel-gc/       pgc.c   Makefile  README.md</code></pre>
+  <p>Los binarios compilados están en <code>.gitignore</code>: el repo contiene solo fuente, <code>Makefile</code>
+  y documentación, y todo se regenera con <code>make</code>.</p>
+</section>
+
+<footer>
+  Documento interactivo autocontenido · gestión de memoria y concurrencia · generado para el proyecto de investigación.
+  Las visualizaciones son ilustrativas; la verdad de cada afirmación vive en el código fuente y sus verificaciones.
+</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Tema ---------- */
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem("labs-theme");
+    if (saved) root.setAttribute("data-theme", saved);
+  } catch (e) {}
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme");
+    var dark = cur ? cur === "dark"
+                   : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("labs-theme", next); } catch (e) {}
+  });
+
+  /* ---------- Pestañas ---------- */
+  var tabs = document.getElementById("tabs");
+  tabs.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-tab]");
+    if (!b) return;
+    var id = b.getAttribute("data-tab");
+    Array.prototype.forEach.call(tabs.querySelectorAll("button"), function (x) {
+      x.setAttribute("aria-selected", x === b ? "true" : "false");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("section.tab"), function (s) {
+      s.classList.toggle("active", s.id === "tab-" + id);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  /* ================= Lab 01: mark-and-sweep ================= */
+  // Grafo: R1,R2 raices. A<->B ciclo alcanzable. X<->Y ciclo huerfano. C alcanzable. G suelto.
+  var GNODES = {
+    R1: { x: 70,  y: 70,  root: true,  label: "R1" },
+    R2: { x: 70,  y: 210, root: true,  label: "R2" },
+    A:  { x: 230, y: 70,  label: "A" },
+    B:  { x: 390, y: 70,  label: "B" },
+    C:  { x: 230, y: 210, label: "C" },
+    X:  { x: 230, y: 300, label: "X" },
+    Y:  { x: 390, y: 300, label: "Y" },
+    G:  { x: 510, y: 210, label: "G" }
+  };
+  var GEDGES = [["R1","A"],["A","B"],["B","A"],["R2","C"],["X","Y"],["Y","X"]];
+  var GADJ = {}; Object.keys(GNODES).forEach(function(k){ GADJ[k]=[]; });
+  GEDGES.forEach(function(e){ GADJ[e[0]].push(e[1]); });
+  var ROOTS = ["R1","R2"];
+
+  var svg = document.getElementById("gcSvg");
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var nodeEls = {};
+  var gcState = {}; // name -> "live" | "marked" | "dead"
+
+  function el(name, attrs) {
+    var e = document.createElementNS(SVGNS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function buildGraph() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    // defs: flecha
+    var defs = el("defs", {});
+    var marker = el("marker", { id:"arrow", viewBox:"0 0 10 10", refX:"9", refY:"5",
+      markerWidth:"7", markerHeight:"7", orient:"auto-start-reverse" });
+    marker.appendChild(el("path", { d:"M0,0 L10,5 L0,10 z", fill:"var(--muted)" }));
+    defs.appendChild(marker); svg.appendChild(defs);
+    // aristas (con ligero desplazamiento para las de ida/vuelta)
+    GEDGES.forEach(function (e) {
+      var a = GNODES[e[0]], b = GNODES[e[1]];
+      var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+      var ux = dx/len, uy = dy/len;
+      // perpendicular offset si existe la arista inversa
+      var hasRev = GEDGES.some(function(o){return o[0]===e[1]&&o[1]===e[0];});
+      var ox = hasRev ? -uy*7 : 0, oy = hasRev ? ux*7 : 0;
+      var x1 = a.x + ux*26 + ox, y1 = a.y + uy*26 + oy;
+      var x2 = b.x - ux*30 + ox, y2 = b.y - uy*30 + oy;
+      svg.appendChild(el("line", { class:"edge", x1:x1, y1:y1, x2:x2, y2:y2,
+        "marker-end":"url(#arrow)" }));
+    });
+    // nodos
+    Object.keys(GNODES).forEach(function (name) {
+      var n = GNODES[name];
+      var g = el("g", { class:"node" });
+      var c = el("circle", { cx:n.x, cy:n.y, r:24, "stroke-width":2 });
+      var t = el("text", { x:n.x, y:n.y+5, "text-anchor":"middle" });
+      t.textContent = n.label;
+      g.appendChild(c); g.appendChild(t); svg.appendChild(g);
+      nodeEls[name] = c;
+    });
+    resetGC();
+  }
+  function paint(name) {
+    var c = nodeEls[name], st = gcState[name], n = GNODES[name];
+    if (st === "dead") {
+      c.setAttribute("fill", "var(--bad-weak)");
+      c.setAttribute("stroke", "var(--bad)");
+      c.parentNode.setAttribute("opacity", "0.25");
+    } else if (st === "marked") {
+      c.setAttribute("fill", "var(--ok-weak)");
+      c.setAttribute("stroke", "var(--ok)");
+      c.parentNode.setAttribute("opacity", "1");
+    } else { // live
+      c.setAttribute("fill", n.root ? "var(--accent-weak)" : "var(--panel)");
+      c.setAttribute("stroke", n.root ? "var(--accent)" : "var(--border)");
+      c.parentNode.setAttribute("opacity", "1");
+    }
+  }
+  function counts() {
+    var m=0,a=0,d=0;
+    Object.keys(gcState).forEach(function(k){
+      if(gcState[k]==="marked")m++; else if(gcState[k]==="dead")d++; else a++;
+    });
+    document.getElementById("gcMarked").textContent = m;
+    document.getElementById("gcFreed").textContent = d;
+    document.getElementById("gcAlive").textContent = Object.keys(gcState).length - d;
+  }
+  function resetGC() {
+    Object.keys(GNODES).forEach(function(k){ gcState[k]="live"; paint(k); });
+    counts();
+    document.getElementById("gcMark").disabled = false;
+    document.getElementById("gcSweep").disabled = true;
+    document.getElementById("gcStatus").textContent = "Pulsa «Marcar» para iniciar la fase 1.";
+  }
+  var gcBusy = false;
+  function doMark() {
+    if (gcBusy) return; gcBusy = true;
+    document.getElementById("gcMark").disabled = true;
+    var queue = ROOTS.slice(), order = [], seen = {};
+    // BFS para ordenar la animacion
+    var q2 = ROOTS.slice();
+    while (q2.length) {
+      var cur = q2.shift();
+      if (seen[cur]) continue; seen[cur]=true; order.push(cur);
+      GADJ[cur].forEach(function(nx){ if(!seen[nx]) q2.push(nx); });
+    }
+    var i = 0;
+    var status = document.getElementById("gcStatus");
+    (function step() {
+      if (i >= order.length) {
+        status.textContent = "Marcado completo. Lo no verde es inalcanzable → pulsa «Barrer».";
+        document.getElementById("gcSweep").disabled = false;
+        gcBusy = false; return;
+      }
+      var name = order[i++];
+      gcState[name] = "marked"; paint(name); counts();
+      status.textContent = "Marcando " + name +
+        (GNODES[name].root ? " (raíz)" : " (alcanzable desde una raíz)") + "…";
+      setTimeout(step, 650);
+    })();
+  }
+  function doSweep() {
+    if (gcBusy) return; gcBusy = true;
+    document.getElementById("gcSweep").disabled = true;
+    var dead = Object.keys(gcState).filter(function(k){ return gcState[k]!=="marked"; });
+    var i = 0, status = document.getElementById("gcStatus");
+    (function step() {
+      if (i >= dead.length) {
+        // limpiar marcas de vivos (como el sweep real)
+        Object.keys(gcState).forEach(function(k){ if(gcState[k]==="marked"){gcState[k]="live"; paint(k);} });
+        status.textContent = "Barrido completo. El ciclo huérfano X↔Y y el objeto G se liberaron; "
+          + "A↔B sobrevivió por ser alcanzable. (Marcas reseteadas para el próximo ciclo.)";
+        counts(); gcBusy = false;
+        document.getElementById("gcMark").disabled = false;
+        return;
+      }
+      var name = dead[i++];
+      gcState[name] = "dead"; paint(name); counts();
+      status.textContent = "Liberando " + name + " (inalcanzable)…";
+      setTimeout(step, 550);
+    })();
+  }
+  document.getElementById("gcMark").addEventListener("click", doMark);
+  document.getElementById("gcSweep").addEventListener("click", doSweep);
+  document.getElementById("gcReset").addEventListener("click", function(){ if(!gcBusy) resetGC(); });
+  buildGraph();
+
+  /* ================= Lab 02: ring buffer ================= */
+  var CAP = 16;
+  var bb = { buf: new Array(CAP).fill(null), head:0, tail:0, count:0, p:0, c:0, seq:1,
+             timer:null, pAcc:0, cAcc:0 };
+  var ringEl = document.getElementById("bbRing");
+  var cells = [];
+  (function buildRing(){
+    for (var i=0;i<CAP;i++){
+      var d = document.createElement("div");
+      d.className = "cell"; d.innerHTML = '<span class="val"></span>';
+      ringEl.appendChild(d); cells.push(d);
+    }
+  })();
+  function renderRing() {
+    for (var i=0;i<CAP;i++){
+      var filled = bb.buf[i] !== null;
+      cells[i].classList.toggle("full", filled);
+      cells[i].querySelector(".val").textContent = filled ? bb.buf[i] : "";
+      // punteros
+      var old = cells[i].querySelectorAll(".ptr");
+      old.forEach(function(x){x.remove();});
+      if (i === bb.head % CAP) { var h=document.createElement("span"); h.className="ptr h"; h.textContent="head"; cells[i].appendChild(h); }
+      if (i === bb.tail % CAP) { var t=document.createElement("span"); t.className="ptr t"; t.textContent="tail"; cells[i].appendChild(t); }
+    }
+    document.getElementById("bbP").textContent = bb.p;
+    document.getElementById("bbC").textContent = bb.c;
+    document.getElementById("bbN").textContent = bb.count;
+  }
+  function produce() {
+    if (bb.count === CAP) { setStatus("buffer LLENO → el productor espera (not_full)"); return false; }
+    bb.buf[bb.tail % CAP] = bb.seq++;
+    bb.tail = (bb.tail + 1) % CAP; bb.count++; bb.p++;
+    setStatus("producido un item → señal not_empty");
+    return true;
+  }
+  function consume() {
+    if (bb.count === 0) { setStatus("buffer VACÍO → el consumidor espera (not_empty)"); return false; }
+    bb.buf[bb.head % CAP] = null;
+    bb.head = (bb.head + 1) % CAP; bb.count--; bb.c++;
+    setStatus("consumido un item → señal not_full");
+    return true;
+  }
+  function setStatus(s){ document.getElementById("bbStatus").textContent = s; }
+  function tick() {
+    var pr = +document.getElementById("bbProd").value;
+    var cr = +document.getElementById("bbCons").value;
+    bb.pAcc += pr; bb.cAcc += cr;
+    if (bb.pAcc >= 10) { bb.pAcc -= 10; produce(); }
+    if (bb.cAcc >= 10) { bb.cAcc -= 10; consume(); }
+    renderRing();
+  }
+  var bbPlaying = false;
+  document.getElementById("bbPlay").addEventListener("click", function () {
+    bbPlaying = !bbPlaying;
+    this.textContent = bbPlaying ? "⏸ Pausar" : "▶ Reproducir";
+    if (bbPlaying) { bb.timer = setInterval(tick, 250); }
+    else { clearInterval(bb.timer); }
+  });
+  document.getElementById("bbReset").addEventListener("click", function () {
+    clearInterval(bb.timer); bbPlaying=false;
+    document.getElementById("bbPlay").textContent = "▶ Reproducir";
+    bb = { buf:new Array(CAP).fill(null), head:0, tail:0, count:0, p:0, c:0, seq:1, timer:null, pAcc:0, cAcc:0 };
+    renderRing(); setStatus("Buffer vacío. Pulsa «Reproducir».");
+  });
+  renderRing();
+
+  /* ================= Lab 03: carrera atómica ================= */
+  var raceBusy = false;
+  function raceReset() {
+    document.getElementById("raceObj").classList.remove("marked");
+    document.getElementById("raceBit").textContent = "0";
+    document.getElementById("th1").className = "thread";
+    document.getElementById("th2").className = "thread";
+    document.getElementById("th1r").textContent = "—";
+    document.getElementById("th2r").textContent = "—";
+    document.getElementById("raceStatus").textContent =
+      "La operación atómica garantiza que solo un hilo \"gana\" y empuja el objeto.";
+  }
+  document.getElementById("raceReset").addEventListener("click", function(){ if(!raceBusy) raceReset(); });
+  document.getElementById("raceGo").addEventListener("click", function () {
+    if (raceBusy) return; raceBusy = true; raceReset();
+    var st = document.getElementById("raceStatus");
+    st.textContent = "Ambos hilos ejecutan atomic_exchange(&O->marked, 1)…";
+    var winner = Math.random() < 0.5 ? 1 : 2;
+    setTimeout(function () {
+      document.getElementById("raceObj").classList.add("marked");
+      document.getElementById("raceBit").textContent = "1";
+      // el ganador recibe prev=0; el perdedor prev=1
+      var w = document.getElementById("th"+winner), wr = document.getElementById("th"+winner+"r");
+      var loser = winner===1?2:1;
+      var l = document.getElementById("th"+loser), lr = document.getElementById("th"+loser+"r");
+      w.classList.add("win"); wr.textContent = "prev=0 → EMPUJA";
+      l.classList.add("lose"); lr.textContent = "prev=1 → no empuja";
+      st.textContent = "El hilo " + winner + " pasó la marca de 0→1 (prev=0): empuja O a la pila y "
+        + "escanea sus hijos. El hilo " + loser + " vio prev=1: O ya está marcado, no hace nada. "
+        + "O se escanea exactamente una vez.";
+      raceBusy = false;
+    }, 700);
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Binarios compilados de los labs
+lab01-gc/gc
+lab01-gc/gc-asan
+lab02-concurrency/conc
+lab02-concurrency/conc-tsan
+lab03-parallel-gc/pgc
+lab03-parallel-gc/pgc-tsan
+
+# Patrones generales de artefactos de build
+*.o
+*.obj
+*.a
+*.so
+*.exe
+*-asan
+*-tsan
+
+# Directorios de build habituales
+build/
+cmake-build-*/
